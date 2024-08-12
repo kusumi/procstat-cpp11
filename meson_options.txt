@@ -1,0 +1,4 @@
+option('stdout', type : 'boolean', value : false, description : 'Use stdout',)
+option('stdthread', type : 'boolean', value : false, description : 'Use std::thread',)
+option('inotify', type : 'boolean', value : false, description : 'Use inotify',)
+option('gettimeofday', type : 'boolean', value : false, description : 'Use gettimeofday',)
