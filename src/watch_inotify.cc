@@ -50,7 +50,7 @@ int delete_watch(int wd) {
 }
 
 int read_watch(watch_res& r) {
-	auto* p = &buf[0];
+	auto* p = buf.data();
 	auto ret = read(fd, p, buf.size());
 	if (ret == -1) {
 		if (errno == EAGAIN)
@@ -63,7 +63,7 @@ int read_watch(watch_res& r) {
 		auto* e = reinterpret_cast<inotify_event*>(p + i);
 		if (e->mask & IN_MODIFY)
 			r.emplace_back(e->wd, WatchEvent::Modify);
-		i += sizeof(inotify_event) + e->len;
+		i += static_cast<int>(sizeof(inotify_event)) + e->len;
 	}
 	return static_cast<int>(ret);
 }

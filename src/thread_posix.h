@@ -1,9 +1,9 @@
 #ifndef SRC_THREAD_POSIX_H_
 #define SRC_THREAD_POSIX_H_
 
-#include <pthread.h>
-
 #include <ctime>
+
+#include <pthread.h>
 
 #define EXTERN_C_BEGIN extern "C" {
 #define EXTERN_C_END }
@@ -26,7 +26,7 @@ static inline void global_unlock(void) {
 
 class Mutex {
 	public:
-	explicit Mutex(void):
+	Mutex(void):
 		_m{},
 		_c{} {
 		pthread_mutex_init(&_m, nullptr);
@@ -57,7 +57,7 @@ class Mutex {
 
 class Thread {
 	public:
-	explicit Thread(void):
+	Thread(void):
 		_t{} {
 	}
 	int create(pfn fn, void* arg) {

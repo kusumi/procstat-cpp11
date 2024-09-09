@@ -3,15 +3,15 @@
 
 #include <map>
 
-#include "./window.h"
 #include "./thread.h"
 #include "./watch.h"
+#include "./window.h"
 
 typedef std::map<int, Window*> map_t;
 
 class Watcher {
 	public:
-	explicit Watcher(void):
+	Watcher(void):
 		_mutex{},
 		_thread{},
 		_map{} {

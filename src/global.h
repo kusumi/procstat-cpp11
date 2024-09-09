@@ -2,6 +2,7 @@
 #define SRC_GLOBAL_H_
 
 #include <vector>
+#include <exception>
 
 #include <csignal>
 #include <ctime>
@@ -19,4 +20,6 @@ namespace opt {
 	extern bool rotatecol;
 	extern bool usedelay;
 }
+
+void add_exception(const std::exception&);
 #endif // SRC_GLOBAL_H_

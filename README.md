@@ -1,4 +1,4 @@
-procstat-cpp11 ([v0.2.0](https://github.com/kusumi/procstat-cpp11/releases/tag/v0.2.0))
+procstat-cpp11 ([v0.2.1](https://github.com/kusumi/procstat-cpp11/releases/tag/v0.2.1))
 ========
 
 ## About

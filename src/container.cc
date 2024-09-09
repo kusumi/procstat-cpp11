@@ -1,31 +1,31 @@
 #include <filesystem>
 #include <stdexcept>
 
-#include "./global.h"
 #include "./container.h"
-#include "./watch.h"
+#include "./global.h"
 #include "./log.h"
+#include "./watch.h"
 
-Container::Container(std::vector<std::string>&& args):
+Container::Container(const std::vector<std::string>&& args):
 	_v{},
 	_it{},
-	_w(new Watcher()) {
+	_w{} {
 	_build_window();
 	for (size_t i = 0; i < args.size(); i++) {
-		auto& s = args[i];
+		const auto& s = args[i];
 		try {
 			auto status = std::filesystem::status(s);
 			if (status.type() != std::filesystem::file_type::regular)
 				continue;
 		} catch (const std::filesystem::filesystem_error& e) {
-			log("%s: %s", s.c_str(), e.what());
+			xlog("%s: %s", s.c_str(), e.what());
 			continue;
 		}
 		if (i < _v.size()) {
 			_v[i]->attach_buffer(s);
 			auto wd = add_watch(s);
 			if (wd != -1)
-				_w->add(wd, _v[i]);
+				_w.add(wd, _v[i]);
 		}
 	}
 	_it = _v.begin();
@@ -33,7 +33,6 @@ Container::Container(std::vector<std::string>&& args):
 }
 
 Container::~Container(void) {
-	delete _w;
 	while (!_v.empty()) {
 		auto* p = _v.back();
 		_v.pop_back();
@@ -198,17 +197,17 @@ void Container::parse_event(int x) {
 }
 
 int Container::thread_create(void) {
-	auto ret = _w->create();
+	auto ret = _w.create();
 	if (ret) {
-		log("create watcher thread failed %d", ret);
+		xlog("create watcher thread failed %d", ret);
 		return ret;
 	}
 
-	for (size_t i = 0; i < _v.size(); i++) {
-		ret = _v[i]->create();
+	for (const auto& p : _v) {
+		ret = p->create();
 		if (ret) {
-			log("window=%p create thread failed %d",
-				static_cast<void*>(_v[i]), ret);
+			xlog("window=%p create thread failed %d",
+				static_cast<void*>(p), ret);
 			return ret;
 		}
 	}
@@ -217,17 +216,17 @@ int Container::thread_create(void) {
 
 void Container::thread_join(void) {
 	int ret;
-	for (size_t i = 0; i < _v.size(); i++)
-		_v[i]->signal();
-	for (size_t i = 0; i < _v.size(); i++) {
-		ret = _v[i]->join();
+	for (const auto& p : _v)
+		p->signal();
+	for (const auto& p : _v) {
+		ret = p->join();
 		if (ret)
-			log("window=%p join thread failed %d",
-				static_cast<void*>(_v[i]), ret);
+			xlog("window=%p join thread failed %d",
+				static_cast<void*>(p), ret);
 	}
 
-	_w->signal();
-	ret = _w->join();
+	_w.signal();
+	ret = _w.join();
 	if (ret)
-		log("join watcher thread failed %d", ret);
+		xlog("join watcher thread failed %d", ret);
 }

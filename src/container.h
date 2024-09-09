@@ -4,12 +4,12 @@
 #include <vector>
 #include <string>
 
-#include "./window.h"
 #include "./watcher.h"
+#include "./window.h"
 
 class Container {
 	public:
-	explicit Container(std::vector<std::string>&&);
+	explicit Container(const std::vector<std::string>&&);
 	Container(const Container&) = delete;
 	Container(Container&&) = delete;
 	Container& operator=(const Container&) = delete;
@@ -28,6 +28,6 @@ class Container {
 	void _alloc_window(int, int, int, int, int);
 	std::vector<Window*> _v;
 	std::vector<Window*>::iterator _it;
-	Watcher *_w;
+	Watcher _w;
 };
 #endif // SRC_CONTAINER_H_

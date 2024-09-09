@@ -5,7 +5,7 @@ if [ "${WARNING_LEVEL}" = "" ]; then
 fi
 WARNING="-Dwarning_level=${WARNING_LEVEL}"
 
-BUILDTYPE_PLAIN="-Dbuildtype=plain" # default debug
+BUILDTYPE_RELEASE="-Dbuildtype=release" # default debug
 STDOUT="-Dstdout=true" # default false
 STDTHREAD="-Dstdthread=true" # default false
 INOTIFY="-Dinotify=true" # default false
@@ -50,7 +50,7 @@ assert_bin() {
 	sym=openlog
 	nm ${f} | grep ${sym} >/dev/null
 	res=$?
-	if [ "${a}" = ${BUILDTYPE_PLAIN} ]; then
+	if [ "${a}" = ${BUILDTYPE_RELEASE} ]; then
 		if [ ${res} -eq 0 ]; then
 			echo "XXX Illegal ${sym}"
 			exit 1
@@ -123,7 +123,7 @@ assert_bin() {
 	fi
 }
 
-for a in "" ${BUILDTYPE_PLAIN}; do
+for a in "" ${BUILDTYPE_RELEASE}; do
 	for b in "" ${STDOUT}; do
 		for c in "" ${STDTHREAD}; do
 			for d in "" ${INOTIFY}; do

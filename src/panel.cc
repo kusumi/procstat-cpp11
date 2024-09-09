@@ -2,12 +2,12 @@
 
 // Panel
 Panel::Panel(int ylen, int xlen, int ypos, int xpos):
-	_scr(new Screen(ylen, xlen, ypos, xpos)),
+	_scr(Screen(ylen, xlen, ypos, xpos)),
 	_ylen(ylen),
 	_xlen(xlen),
 	_ypos(ypos),
 	_xpos(xpos) {
-	_scr->background();
+	_scr.background();
 }
 
 void Panel::resize(int ylen, int xlen, int ypos, int xpos) {
@@ -20,12 +20,8 @@ void Panel::_resize(int ylen, int xlen, int ypos, int xpos) {
 	_xlen = xlen;
 	_ypos = ypos;
 	_xpos = xpos;
-	_scr->resize(_ylen, _xlen);
-	_scr->move(_ypos, _xpos);
-}
-
-void Panel::print(int y, int x, bool standout, std::string& s) {
-	_scr->print(y, x, standout, s.c_str());
+	_scr.resize(_ylen, _xlen);
+	_scr.move(_ypos, _xpos);
 }
 
 // Frame
@@ -33,10 +29,10 @@ Frame::Frame(int ylen, int xlen, int ypos, int xpos):
 	Panel(ylen, xlen, ypos, xpos),
 	_title{},
 	_focus(false) {
-	_scr->box();
+	_scr.box();
 }
 
-void Frame::set_title(std::string& s) {
+void Frame::set_title(const std::string& s) {
 	_title = s;
 	_print_title();
 }
@@ -48,7 +44,7 @@ void Frame::set_focus(bool t) {
 
 void Frame::resize(int ylen, int xlen, int ypos, int xpos) {
 	_resize(ylen, xlen, ypos, xpos);
-	_scr->box();
+	_scr.box();
 	_print_title();
 }
 

@@ -1,6 +1,6 @@
 #include "./global.h"
-#include "./watcher.h"
 #include "./log.h"
+#include "./watcher.h"
 
 Watcher::~Watcher(void) {
 	for (const auto& e : _map)
@@ -8,7 +8,7 @@ Watcher::~Watcher(void) {
 }
 
 void Watcher::parse_event(int wd, WatchEvent event) {
-	if (_map.find(wd) == _map.end())
+	if (!_map.contains(wd))
 		return;
 	switch (event) {
 	case WatchEvent::Modify:
@@ -19,10 +19,10 @@ void Watcher::parse_event(int wd, WatchEvent event) {
 	}
 }
 
+namespace {
 EXTERN_C_BEGIN
-static void* watch_thread_handler(void* arg) {
-	auto* p = reinterpret_cast<Watcher*>(arg);
-	log("thread=%lu", get_thread_id());
+void* watch_handler_impl(Watcher* p) {
+	xlog("thread=%lu", get_thread_id());
 	while (!interrupted) {
 		watch_res r;
 		if (read_watch(r) > 0) {
@@ -36,8 +36,18 @@ static void* watch_thread_handler(void* arg) {
 	}
 	return nullptr;
 }
+
+void* watch_handler(void* arg) {
+	try {
+		return watch_handler_impl(reinterpret_cast<Watcher*>(arg));
+	} catch (const std::exception& e) {
+		add_exception(e);
+		return nullptr;
+	}
+}
 EXTERN_C_END
+} // namespace
 
 int Watcher::create(void) {
-	return _thread.create(watch_thread_handler, this);
+	return _thread.create(watch_handler, this);
 }

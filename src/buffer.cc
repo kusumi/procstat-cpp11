@@ -2,13 +2,13 @@
 #include <iterator>
 #include <algorithm>
 
-#include "./global.h"
 #include "./buffer.h"
+#include "./global.h"
 
-Buffer::Buffer(std::string& f):
+Buffer::Buffer(const std::string& f):
 	_mutex{},
 	_chunk{},
-	_ifs(f.c_str(), std::ifstream::in),
+	_ifs(f.c_str()),
 	_path(f),
 	_curline(0),
 	_maxline(0),
@@ -36,16 +36,16 @@ void Buffer::update(void) {
 	block_till_ready();
 	auto tmp = _ifs.tellg();
 	_ifs.seekg(0);
-	_maxline = std::count(std::istreambuf_iterator<char>(_ifs),
-		std::istreambuf_iterator<char>(), '\n') - 1;
+	_maxline = static_cast<int>(std::count(
+		std::istreambuf_iterator<char>(_ifs),
+		std::istreambuf_iterator<char>(), '\n')) - 1;
 	_ifs.seekg(tmp);
 	signal_blocked();
 }
 
 // caller need to test if ready
 int Buffer::readline(int& pos, std::string& s, bool& standout) {
-	std::getline(_ifs, s);
-	if (_ifs.eof() && s.empty())
+	if (!std::getline(_ifs, s))
 		return -1;
 
 	size_t i = 0;
@@ -65,7 +65,7 @@ int Buffer::readline(int& pos, std::string& s, bool& standout) {
 
 	pos = _curline++;
 	if (opt::showlnum) {
-		std::stringstream ss;
+		std::ostringstream ss;
 		ss << _curline << ' ' << s;
 		s = ss.str();
 	}

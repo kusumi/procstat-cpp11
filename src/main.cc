@@ -1,6 +1,9 @@
 #include <iostream>
+#include <sstream>
+#include <array>
 #include <vector>
 #include <string>
+#include <exception>
 
 #include <cstdlib>
 #include <cstring>
@@ -9,12 +12,12 @@
 
 #include <getopt.h>
 
-#include "./global.h"
-#include "./thread.h"
-#include "./log.h"
-#include "./watch.h"
-#include "./screen.h"
 #include "./container.h"
+#include "./global.h"
+#include "./log.h"
+#include "./screen.h"
+#include "./thread.h"
+#include "./watch.h"
 
 extern char* optarg;
 extern int optind;
@@ -33,7 +36,18 @@ namespace opt {
 }
 
 namespace {
-std::string _what;
+const std::array<int, 3> _version{0, 2, 1};
+std::vector<std::string> _what;
+
+std::string get_version_string() {
+	std::ostringstream ss;
+	ss << _version[0] << "." << _version[1] << "." << _version[2];
+	return ss.str();
+}
+
+void print_version() {
+	std::cout << get_version_string() << std::endl;
+}
 
 void sigint_handler([[maybe_unused]] int n) {
 	interrupted = 1;
@@ -44,12 +58,12 @@ void atexit_handler(void) {
 	cleanup_watch();
 	cleanup_log();
 	cleanup_lock();
-	if (!_what.empty())
-		std::cerr << _what << std::endl;
+	for (const auto& s : _what)
+		std::cerr << s << std::endl;
 }
 
 void print_build_options(void) {
-	std::cerr << "Build options:" << std::endl
+	std::cout << "Build options:" << std::endl
 #ifdef DEBUG
 		<< "  debug" << std::endl
 #endif
@@ -112,7 +126,16 @@ void usage(const std::string& arg) {
 }
 } // namespace
 
+void add_exception(const std::exception &e) {
+	global_lock();
+	_what.push_back(e.what());
+	global_unlock();
+}
+
 int main(int argc, char** argv) {
+	const char* progname_ptr = argv[0];
+	std::string progname(progname_ptr);
+
 	int i, c;
 	option lo[] = {
 		{ "fg", 1, nullptr, 'F' },
@@ -127,13 +150,18 @@ int main(int argc, char** argv) {
 	short opt_bgcolor = -1; // default color
 	auto opt_usemsec = false;
 
-	while ((c = getopt_long(argc, argv, "c:t:mnfrhux", lo, &i)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:t:mnfrvhx", lo, &i)) != -1) {
 		switch (c) {
 		case 'c':
 			opt_layout = optarg;
 			break;
 		case 't':
-			opt::sinterval = std::stoi(optarg);
+			try {
+				opt::sinterval = std::stoi(optarg);
+			} catch (std::exception& e) {
+				std::cerr << e.what() << ": " << optarg << std::endl;
+				exit(1);
+			}
 			break;
 		case 'F':
 			opt_fgcolor = string_to_color(optarg);
@@ -159,14 +187,16 @@ int main(int argc, char** argv) {
 		case 'T':
 			opt::usedelay = true;
 			break;
+		case 'v':
+			print_version();
+			exit(1);
+		default:
+		case 'h':
+			usage(progname);
+			exit(1);
 		case 'x': // hidden
 			print_build_options();
 			exit(0);
-		default:
-		case 'h':
-		case 'u':
-			usage(argv[0]);
-			exit(1);
 		}
 	}
 
@@ -197,12 +227,12 @@ int main(int argc, char** argv) {
 	}
 
 	init_lock();
-	init_log(argv[0]);
+	init_log(progname_ptr);
 	init_watch(true);
 
 	auto ret = init_screen(opt_fgcolor, opt_bgcolor);
 	if (ret) {
-		log("failed to init screen %d", ret);
+		xlog("failed to init screen %d", ret);
 		exit(1);
 	}
 
@@ -231,7 +261,7 @@ int main(int argc, char** argv) {
 			co.parse_event(read_incoming());
 		co.thread_join();
 	} catch (const std::exception& e) {
-		_what = e.what();
+		add_exception(e);
 		exit(1);
 	}
 

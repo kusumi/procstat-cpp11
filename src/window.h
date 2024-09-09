@@ -2,10 +2,11 @@
 #define SRC_WINDOW_H_
 
 #include <string>
+#include <memory>
 
-#include "./thread.h"
-#include "./panel.h"
 #include "./buffer.h"
+#include "./panel.h"
+#include "./thread.h"
 
 class Window {
 	public:
@@ -15,9 +16,11 @@ class Window {
 	Window& operator=(const Window&) = delete;
 	Window& operator=(Window&&) = delete;
 	~Window(void);
-	bool is_dead();
+	bool is_dead() {
+		return !_buffer || _buffer->is_dead();
+	}
 	void resize(int, int, int, int);
-	void attach_buffer(std::string&);
+	void attach_buffer(const std::string&);
 	void update_buffer(void);
 	void focus(bool);
 	void goto_head(void);
@@ -34,9 +37,9 @@ class Window {
 	private:
 	Mutex _mutex;
 	Thread _thread;
-	Panel* _frame;
-	Panel* _panel;
-	Buffer* _buffer;
+	std::unique_ptr<Panel> _frame;
+	std::unique_ptr<Panel> _panel;
+	std::unique_ptr<Buffer> _buffer;
 	int _offset;
 };
 #endif // SRC_WINDOW_H_

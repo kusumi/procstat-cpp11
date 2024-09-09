@@ -1,27 +1,20 @@
 #include "./global.h"
-#include "./window.h"
 #include "./log.h"
+#include "./window.h"
 
 Window::Window(int ylen, int xlen, int ypos, int xpos):
 	_mutex{},
 	_thread{},
-	_frame(new Frame(ylen, xlen, ypos, xpos)),
-	_panel(new Panel(ylen - 2, xlen - 2, ypos + 1, xpos + 1)),
-	_buffer(nullptr),
+	_frame(std::make_unique<Frame>(ylen, xlen, ypos, xpos)),
+	_panel(std::make_unique<Panel>(ylen - 2, xlen - 2, ypos + 1, xpos + 1)),
+	_buffer{},
 	_offset(0) {
 	_frame->refresh();
 	_panel->refresh();
 }
 
 Window::~Window(void) {
-	delete _buffer;
-	delete _frame;
-	delete _panel;
-	log("window=%p", static_cast<void*>(this));
-}
-
-bool Window::is_dead(void) {
-	return !_buffer || _buffer->is_dead();
+	xlog("window=%p", static_cast<void*>(this));
 }
 
 void Window::resize(int ylen, int xlen, int ypos, int xpos) {
@@ -32,7 +25,7 @@ void Window::resize(int ylen, int xlen, int ypos, int xpos) {
 	_mutex.unlock();
 }
 
-void Window::attach_buffer(std::string& f) {
+void Window::attach_buffer(const std::string& f) {
 	_mutex.lock();
 	if (_buffer) {
 		_mutex.unlock();
@@ -41,14 +34,14 @@ void Window::attach_buffer(std::string& f) {
 	_frame->set_title(f);
 	_panel->set_title(f);
 	_mutex.unlock();
-	_buffer = new Buffer(f);
-	log("window=%p path=%s", static_cast<void*>(this),
+	_buffer = std::make_unique<Buffer>(f);
+	xlog("window=%p path=%s", static_cast<void*>(this),
 		_buffer->get_path().c_str());
 }
 
 void Window::update_buffer(void) {
 	_buffer->update();
-	log("window=%p path=%s", static_cast<void*>(this),
+	xlog("window=%p path=%s", static_cast<void*>(this),
 		_buffer->get_path().c_str());
 }
 
@@ -127,9 +120,9 @@ void Window::repaint(void) {
 	_buffer->signal_blocked();
 }
 
+namespace {
 EXTERN_C_BEGIN
-static void* thread_handler(void* arg) {
-	auto* p = reinterpret_cast<Window*>(arg);
+void* thread_handler_impl(Window* p) {
 	long t = 0;
 	if (opt::usedelay) {
 		auto va = reinterpret_cast<long>(p);
@@ -138,7 +131,7 @@ static void* thread_handler(void* arg) {
 		else
 			t = va % (opt::ninterval / 1000 / 1000);
 	}
-	log("window=%p thread=%lu delay=%ld", static_cast<void*>(p),
+	xlog("window=%p thread=%lu delay=%ld", static_cast<void*>(p),
 		get_thread_id(), t);
 	if (t) {
 		p->repaint();
@@ -150,7 +143,17 @@ static void* thread_handler(void* arg) {
 	}
 	return nullptr;
 }
+
+void* thread_handler(void* arg) {
+	try {
+		return thread_handler_impl(reinterpret_cast<Window*>(arg));
+	} catch (const std::exception& e) {
+		add_exception(e);
+		return nullptr;
+	}
+}
 EXTERN_C_END
+} // namespace
 
 void Window::signal(void) {
 	_mutex.lock();

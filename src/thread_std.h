@@ -33,7 +33,7 @@ static inline void global_unlock(void) {
 
 class Mutex {
 	public:
-	explicit Mutex(void):
+	Mutex(void):
 		_m{},
 		_c{} {
 	}
@@ -59,7 +59,7 @@ class Mutex {
 
 class Thread {
 	public:
-	explicit Thread(void):
+	Thread(void):
 		_t{} {
 	}
 	int create(pfn fn, void* arg) {
